@@ -133,14 +133,15 @@ bindkey '^N' history-search-forward
 eval "$(starship init zsh)"
 EOF
 
-# === 6. Применение настроек zsh в текущей сессии ===
-# (если скрипт запущен из bash и zsh уже установлен)
-if [ -n "$ZSH_VERSION" ]; then
-    source ~/.zshrc
-fi
-
-# === 7. Gruvbox Rainbow preset для Starship ===
+# === 6. Gruvbox Rainbow preset для Starship ===
 mkdir -p ~/.config
 starship preset gruvbox-rainbow -o ~/.config/starship.toml
 
-echo "Готово. Перезайди в сессию (logout/login) или выполни: zsh"
+echo "Готово. Переключаюсь в zsh..."
+
+# === 7. Применяем zsh прямо сейчас ===
+if command -v zsh >/dev/null 2>&1; then
+    exec zsh -l
+else
+    echo "zsh не найден, запусти его вручную после установки."
+fi
