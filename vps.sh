@@ -103,6 +103,7 @@ zstyle ':completion:*:descriptions' format '[%d]'
 alias ls='ls --color=auto'
 alias rr='/usr/local/bin/remnawave_reverse'
 alias drd="docker compose down && docker compose up -d && docker compose logs -f -t"
+alias dru="docker compose pull && docker compose down && docker compose up -d && docker compose logs -f"
 alias upf="apt update && apt full-upgrade -y"
 alias up="apt update -y"
 alias mi="micro"
