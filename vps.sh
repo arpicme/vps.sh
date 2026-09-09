@@ -106,6 +106,7 @@ alias drd="docker compose down && docker compose up -d && docker compose logs -f
 alias dru="docker compose pull && docker compose down && docker compose up -d && docker compose logs -f"
 alias upf="apt update && apt full-upgrade -y"
 alias up="apt update -y"
+alias upg="apt upgrade -y"
 alias mi="micro"
 alias cl="clear"
 alias mds="motd-set"
