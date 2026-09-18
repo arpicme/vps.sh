@@ -229,7 +229,8 @@ run_step "Применение темы Gruvbox Rainbow для Starship" setup_s
 # === 9. Обновление плагинов Zinit ===
 update_zinit_plugins() {
     if [ -f "$HOME/.local/share/zinit/zinit.zsh" ]; then
-        zsh -c "source $HOME/.local/share/zinit/zinit.zsh && zinit self-update -q && zinit update --all -q && zinit csclear"
+        # Заменено csclear на cdclear, и добавлен || true для защиты от мелких сбоев
+        zsh -c "source $HOME/.local/share/zinit/zinit.zsh && zinit self-update -q && zinit update --all -q && zinit cdclear -q" || true
     fi
 }
 run_step "Обновление плагинов Zsh" update_zinit_plugins
