@@ -41,6 +41,9 @@ if command -v zsh >/dev/null 2>&1; then
 fi
 
 # === 5. Генерация ~/.zshrc ===
+kdir -p ~/.local/share/zsh ~/.local/share/zinit
+touch ~/.local/share/zsh/chpwd-recent-dirs
+
 cat > ~/.zshrc << 'EOF'
 export PATH="$HOME/.local/bin:$PATH"
 
