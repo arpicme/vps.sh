@@ -173,7 +173,7 @@ CRON_JOB="0 19 * * 4 /usr/bin/apt update && /usr/bin/apt full-upgrade -y >> /var
 
 # === 8. Gruvbox Rainbow preset для Starship ===
 mkdir -p ~/.config
-starship preset gruvbox-rainbow -o ~/.config/starship.toml
+starship preset gruvbox-rainbow --force -o ~/.config/starship.toml
 
 echo "Готово. Переключаюсь в zsh..."
 
