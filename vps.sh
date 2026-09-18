@@ -1,24 +1,30 @@
 #!/usr/bin/env bash
 set -e
 
-# === Функция универсального ASCII-спиннера ===
-show_spinner() {
-    local pid=$1
-    local delay=0.1
+# === Функция спиннера в фоновом режиме ===
+spin_loop() {
     local spinstr='|/-\'
-    
-    # Скрываем курсор
+    local delay=0.1
     tput civis 2>/dev/null || true
-    
-    while kill -0 "$pid" 2>/dev/null; do
+    while true; do
         local temp=${spinstr#?}
         printf " [%c] " "$spinstr"
         spinstr=$temp${spinstr%"$temp"}
         sleep $delay
         printf "\b\b\b\b\b"
     done
-    
-    # Возвращаем курсор
+}
+
+start_spinner() {
+    spin_loop &
+    SPINNER_PID=$!
+}
+
+stop_spinner() {
+    if [ -n "$SPINNER_PID" ]; then
+        kill "$SPINNER_PID" 2>/dev/null || true
+        wait "$SPINNER_PID" 2>/dev/null || true
+    fi
     tput cnorm 2>/dev/null || true
 }
 
@@ -29,26 +35,26 @@ run_step() {
     
     echo -n " $title... "
     
-    # Запускаем команду в фоновом режиме
-    "$@" >/dev/null 2>&1 &
-    local cmd_pid=$!
+    start_spinner
     
-    # Запускаем анимацию спиннера
-    show_spinner $cmd_pid
-    
-    # Ждем завершения команды и получаем ее код ответа
-    wait $cmd_pid
-    local exit_code=$?
-    
-    if [ $exit_code -eq 0 ]; then
+    if "$@" >/dev/null 2>&1; then
+        stop_spinner
         echo -e "\r\033[K✅ $title — готово"
     else
+        stop_spinner
         echo -e "\r\033[K❌ $title — ошибка"
         return 1
     fi
 }
 
 echo -e "\n🚀 Начинаем настройку сервера...\n"
+
+# === 0. Предварительная очистка кэша Zsh перед началом установки ===
+pre_clean_zsh() {
+    rm -rf ~/.local/share/zinit/completions/*
+    rm -f ~/.zcompdump*
+}
+run_step "Очистка старого кэша Zsh" pre_clean_zsh
 
 # === 1. Обновление системы и базовый набор пакетов ===
 run_step "Обновление списка пакетов" apt update
@@ -139,7 +145,7 @@ zinit ice depth=1; zinit light ajeetdsouza/zoxide
 # Меню history по Ctrl-R (через fzf)
 bindkey '^R' fzf-history-widget
 
-# Цвета completion-меню и тихая инициализация без вывода ошибок
+# Цвета completion-меню и инициализация
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 autoload -Uz compinit && compinit -u -C
@@ -220,16 +226,13 @@ setup_starship_preset() {
 }
 run_step "Применение темы Gruvbox Rainbow для Starship" setup_starship_preset
 
-# === 9. Обновление плагинов Zinit и очистка кэша автодополнений ===
-clean_and_update_zinit() {
-    # Удаление поврежденных симлинков и кэша автодополнений
-    rm -rf ~/.local/share/zinit/completions/*
-    rm -f ~/.zcompdump*
+# === 9. Обновление плагинов Zinit ===
+update_zinit_plugins() {
     if [ -f "$HOME/.local/share/zinit/zinit.zsh" ]; then
         zsh -c "source $HOME/.local/share/zinit/zinit.zsh && zinit self-update -q && zinit update --all -q && zinit csclear"
     fi
 }
-run_step "Обновление плагинов Zsh и очистка кэша" clean_and_update_zinit
+run_step "Обновление плагинов Zsh" update_zinit_plugins
 
 # === 10. Завершение работы ===
 echo ""
@@ -238,11 +241,11 @@ echo " 🎉 Настройка успешно завершена!"
 echo " Для повторного запуска используйте команду: scu"
 echo "================================================="
 echo ""
-echo "Переключаюсь в zsh..."
 
-# Удаляем старый zcompdump перед входом, чтобы Zsh сгенерировал его заново без ошибок
-rm -f ~/.zcompdump*
+# Возвращаем стандартное отображение курсора
+tput cnorm 2>/dev/null || true
 
+# Переключение в оболочку zsh
 if command -v zsh >/dev/null 2>&1; then
     exec zsh -l
 else
