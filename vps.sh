@@ -126,6 +126,7 @@ alias szh="cd && source .zshrc"
 alias cl="clear"
 alias mds="motd-set"
 alias scu="bash <(wget -qO- https://raw.githubusercontent.com/arpicme/vps.sh/refs/heads/main/vps.sh)"
+alias zup="zinit self-update && zinit update --all"
 
 # Функции
 # Перезапуск контейнера
@@ -147,6 +148,12 @@ rwu() {
     return 1
   fi
 }
+
+# === Обновление плагинов Zinit и самого менеджкра ===
+if [ -d "$HOME/.local/share/zinit/zinit.zsh" ]; then
+    echo "Обновляем плагины Zsh..."
+    zsh -ic "zinit self-update && zinit update --all"
+fi
 
 # Настройка истории
 HISTSIZE=5000
