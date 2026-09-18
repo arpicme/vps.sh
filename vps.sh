@@ -53,7 +53,17 @@ run_step() {
 
 echo -e "\n🚀 Начинаем настройку сервера...\n"
 
-# === 0. Предварительная очистка кэша Zsh перед началом установки ===
+# === 0.1. Фикс PATH и репозиториев для чистой Debian ===
+prepare_debian() {
+    export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+    
+    if [ -f /etc/apt/sources.list ]; then
+        sed -i 's/main$/main contrib non-free non-free-firmware/g' /etc/apt/sources.list || true
+    fi
+}
+run_step "Подготовка системного окружения (PATH/Репозитории)" prepare_debian
+
+# === 0.2. Предварительная очистка кэша Zsh перед началом установки ===
 pre_clean_zsh() {
     rm -rf ~/.local/share/zinit/completions/*
     rm -f ~/.zcompdump*
@@ -156,11 +166,11 @@ autoload -Uz compinit && compinit -u -C
 zstyle ':completion:*' menu select
 zstyle ':completion:*:descriptions' format '[%d]'
 
-# Алиасы
+# Алиасы (sudo удален для предотвращения ошибок на чистой системе, так как скрипт выполняется от root)
 alias ls='ls --color=auto'
 alias rr='/usr/local/bin/remnawave_reverse'
 alias rwe="docker exec -it remnawave cli"
-alias up="sudo apt update && sudo apt full-upgrade -y"
+alias up="apt update && apt full-upgrade -y"
 alias upw="up && rwu"
 alias mi="micro"
 alias mzh="cd && mi .zshrc"
@@ -217,7 +227,7 @@ run_step "Генерация файла конфигурации .zshrc" generat
 
 # === 7. Настройка задач Cron ===
 setup_cron() {
-    systemctl enable cron --now
+    systemctl enable cron --now || true
     CRON_JOB="0 19 * * 4 /usr/bin/apt update && /usr/bin/apt full-upgrade -y >> /var/log/apt_autoupdate.log 2>&1"
     (crontab -l 2>/dev/null | grep -Fv "$CRON_JOB"; echo "$CRON_JOB") | crontab -
 }
