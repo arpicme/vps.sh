@@ -26,17 +26,22 @@ cat > ~/.config/micro/settings.json << 'EOF'
 }
 EOF
 
-# === 4. Установка Starship и шрифтов JetBrainsMono Nerd Font ===
+# === 4. Установка Starship и шрифтов JetBrainsMono Nerd Font (с проверкой) ===
 curl -sS https://starship.rs/install.sh | sh -s -- -y
 
-cd /tmp
-wget -q https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip -O JetBrainsMono.zip
-unzip -o JetBrainsMono.zip -d JetBrainsMono
-mkdir -p ~/.local/share/fonts
-mv JetBrainsMono/* ~/.local/share/fonts/
-fc-cache -fv
-rm -rf JetBrainsMono JetBrainsMono.zip
-cd ~
+if [ ! -d "$HOME/.local/share/fonts/JetBrainsMono" ]; then
+    echo "Шрифты JetBrainsMono не найдены. Устанавливаем..."
+    cd /tmp
+    wget -q https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip -O JetBrainsMono.zip
+    unzip -o JetBrainsMono.zip -d JetBrainsMono
+    mkdir -p ~/.local/share/fonts/JetBrainsMono
+    mv JetBrainsMono/* ~/.local/share/fonts/JetBrainsMono/
+    fc-cache -fv
+    rm -rf JetBrainsMono JetBrainsMono.zip
+    cd ~
+else
+    echo "Шрифты JetBrainsMono уже установлены, пропускаем скачивание."
+fi
 
 # === 5. Включение zsh по умолчанию ===
 if command -v zsh >/dev/null 2>&1; then
@@ -120,6 +125,7 @@ alias mzh="cd && mi .zshrc"
 alias szh="cd && source .zshrc"
 alias cl="clear"
 alias mds="motd-set"
+alias scu="bash <(wget -qO- https://raw.githubusercontent.com/arpicme/vps.sh/refs/heads/main/vps.sh)"
 
 # Функции
 # Перезапуск контейнера
@@ -175,9 +181,16 @@ CRON_JOB="0 19 * * 4 /usr/bin/apt update && /usr/bin/apt full-upgrade -y >> /var
 mkdir -p ~/.config
 starship preset gruvbox-rainbow --force -o ~/.config/starship.toml
 
-echo "Готово. Переключаюсь в zsh..."
+# === 9. Завершение работы ===
+echo ""
+echo "================================================="
+echo " Настройка завершена!"
+echo " Для повторного запуска или обновления скрипта"
+echo " в будущем вы можете использовать команду: scu"
+echo "================================================="
+echo ""
+echo "Переключаюсь в zsh..."
 
-# === 9. Применяем zsh прямо сейчас ===
 if command -v zsh >/dev/null 2>&1; then
     exec zsh -l
 else
