@@ -126,7 +126,7 @@ alias szh="cd && source .zshrc"
 alias cl="clear"
 alias mds="motd-set"
 alias scu="bash <(wget -qO- https://raw.githubusercontent.com/arpicme/vps.sh/refs/heads/main/vps.sh)"
-alias zup="PAGER=cat zinit self-update -q && zinit update --all -q"
+alias zup="PAGER=cat GIT_PAGER=cat zinit self-update -q && PAGER=cat GIT_PAGER=cat zinit update --all -q"
 
 # Функции
 # Перезапуск контейнера
