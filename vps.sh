@@ -111,6 +111,27 @@ alias mi="micro"
 alias cl="clear"
 alias mds="motd-set"
 
+# Функции
+# Перезапуск контейнера
+rw() {
+  if cd /opt/remnanode 2>/dev/null || cd /opt/remnawave 2>/dev/null; then
+    docker compose down && docker compose up -d && docker compose logs -f -t
+  else
+    echo "Ошибка: ни одна из папок (/opt/remnanode или /opt/remnawave) не найдена."
+    return 1
+  fi
+}
+
+# Пулл контейнера
+rwu() {
+  if cd /opt/remnanode 2>/dev/null || cd /opt/remnawave 2>/dev/null; then
+    docker compose pull && docker compose down && docker compose up -d && docker compose logs -f -t
+  else
+    echo "Ошибка: ни одна из папок (/opt/remnanode или /opt/remnawave) не найдена."
+    return 1
+  fi
+}
+
 # Настройка истории
 HISTSIZE=5000
 SAVEHIST=5000
