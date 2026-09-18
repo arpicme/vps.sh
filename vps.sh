@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+# Очистка старого лога перед запуском
+> /tmp/vps_setup.log
+
 # === Функция спиннера в фоновом режиме ===
 spin_loop() {
     local spinstr='|/-\'
@@ -37,12 +40,13 @@ run_step() {
     
     start_spinner
     
-    if "$@" >/dev/null 2>&1; then
+    # Перенаправляем вывод в лог-файл
+    if "$@" >> /tmp/vps_setup.log 2>&1; then
         stop_spinner
         echo -e "\r\033[K✅ $title — готово"
     else
         stop_spinner
-        echo -e "\r\033[K❌ $title — ошибка"
+        echo -e "\r\033[K❌ $title — ошибка (лог: /tmp/vps_setup.log)"
         return 1
     fi
 }
@@ -229,9 +233,9 @@ run_step "Применение темы Gruvbox Rainbow для Starship" setup_s
 # === 9. Обновление плагинов Zinit ===
 update_zinit_plugins() {
     if [ -f "$HOME/.local/share/zinit/zinit.zsh" ]; then
-        # Заменено csclear на cdclear, и добавлен || true для защиты от мелких сбоев
-        zsh -c "source $HOME/.local/share/zinit/zinit.zsh && zinit self-update -q && zinit update --all -q && zinit cdclear -q" || true
+        zsh -c "source $HOME/.local/share/zinit/zinit.zsh && zinit self-update -q && zinit update --all -q" || true
     fi
+    return 0
 }
 run_step "Обновление плагинов Zsh" update_zinit_plugins
 
@@ -243,10 +247,8 @@ echo " Для повторного запуска используйте ком�
 echo "================================================="
 echo ""
 
-# Возвращаем стандартное отображение курсора
 tput cnorm 2>/dev/null || true
 
-# Переключение в оболочку zsh
 if command -v zsh >/dev/null 2>&1; then
     exec zsh -l
 else
