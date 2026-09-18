@@ -149,12 +149,6 @@ rwu() {
   fi
 }
 
-# === Обновление плагинов Zinit и самого менеджкра ===
-if [ -d "$HOME/.local/share/zinit/zinit.zsh" ]; then
-    echo "Обновляем плагины Zsh..."
-    zsh -ic "zinit self-update && zinit update --all"
-fi
-
 # Настройка истории
 HISTSIZE=5000
 SAVEHIST=5000
@@ -188,7 +182,13 @@ CRON_JOB="0 19 * * 4 /usr/bin/apt update && /usr/bin/apt full-upgrade -y >> /var
 mkdir -p ~/.config
 starship preset gruvbox-rainbow --force -o ~/.config/starship.toml
 
-# === 9. Завершение работы ===
+# === 9. Обновление плагинов Zinit при запуске скрипта ===
+if command -v zsh >/dev/null 2>&1 && [ -f "$HOME/.local/share/zinit/zinit.zsh" ]; then
+    echo "Обновляем плагины Zsh и Zinit..."
+    zsh -ic "source ~/.zshrc && zinit self-update && zinit update --all" || true
+fi
+
+# === 10. Завершение работы ===
 echo ""
 echo "================================================="
 echo " Настройка завершена!"
