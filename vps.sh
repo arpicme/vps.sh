@@ -185,7 +185,7 @@ starship preset gruvbox-rainbow --force -o ~/.config/starship.toml
 # === 9. Обновление плагинов Zinit при запуске скрипта ===
 if command -v zsh >/dev/null 2>&1 && [ -f "$HOME/.local/share/zinit/zinit.zsh" ]; then
     echo "Обновляем плагины Zsh и Zinit..."
-    zsh -ic "source ~/.zshrc && zinit self-update -q && zinit update --all -q" || true
+    PAGER=cat GIT_PAGER=cat zsh -ic "source ~/.zshrc && zinit self-update --no-pager -q && zinit update --all -q" || true
 fi
 
 # === 10. Завершение работы ===
