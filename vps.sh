@@ -102,18 +102,17 @@ zstyle ':completion:*:descriptions' format '[%d]'
 # Алиасы
 alias ls='ls --color=auto'
 alias rr='/usr/local/bin/remnawave_reverse'
-alias drd="docker compose down && docker compose up -d && docker compose logs -f -t"
-alias dru="docker compose pull && docker compose down && docker compose up -d && docker compose logs -f"
-alias upf="apt update && apt full-upgrade -y"
-alias up="apt update -y"
-alias upg="apt upgrade -y"
+alias rwe="docker exec -it remnawave cli"
+alias up="sudo apt update && sudo apt full-upgrade -y"
 alias mi="micro"
+alias mzh="cd && mi .zshrc"
+alias szh="cd && source .zshrc"
 alias cl="clear"
 alias mds="motd-set"
 
 # Функции
 # Перезапуск контейнера
-rw() {
+rwr() {
   if cd /opt/remnanode 2>/dev/null || cd /opt/remnawave 2>/dev/null; then
     docker compose down && docker compose up -d && docker compose logs -f -t
   else
