@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -e
 
-# === Функция вращающегося спиннера ===
+# === Функция универсального ASCII-спиннера ===
 show_spinner() {
     local pid=$1
     local delay=0.1
-    local spinstr='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    local spinstr='|/-\'
     
-    # Скрываем курсор в терминале
-    tput civis
+    # Скрываем курсор
+    tput civis 2>/dev/null || true
     
     while kill -0 "$pid" 2>/dev/null; do
         local temp=${spinstr#?}
@@ -18,8 +18,8 @@ show_spinner() {
         printf "\b\b\b\b\b"
     done
     
-    # Возвращаем курсор обратно
-    tput cnorm
+    # Возвращаем курсор
+    tput cnorm 2>/dev/null || true
 }
 
 # === Функция выполнения каждого этапа ===
@@ -139,10 +139,10 @@ zinit ice depth=1; zinit light ajeetdsouza/zoxide
 # Меню history по Ctrl-R (через fzf)
 bindkey '^R' fzf-history-widget
 
-# Цвета completion-меню и case-insensitive
+# Цвета completion-меню и тихая инициализация без вывода ошибок
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
-autoload -Uz compinit && compinit
+autoload -Uz compinit && compinit -u -C
 zstyle ':completion:*' menu select
 zstyle ':completion:*:descriptions' format '[%d]'
 
@@ -220,13 +220,16 @@ setup_starship_preset() {
 }
 run_step "Применение темы Gruvbox Rainbow для Starship" setup_starship_preset
 
-# === 9. Обновление плагинов Zinit при запуске скрипта ===
-update_zinit() {
+# === 9. Обновление плагинов Zinit и очистка кэша автодополнений ===
+clean_and_update_zinit() {
+    # Удаление поврежденных симлинков и кэша автодополнений
+    rm -rf ~/.local/share/zinit/completions/*
+    rm -f ~/.zcompdump*
     if [ -f "$HOME/.local/share/zinit/zinit.zsh" ]; then
-        zsh -c "source $HOME/.local/share/zinit/zinit.zsh && zinit self-update -q && zinit update --all -q"
+        zsh -c "source $HOME/.local/share/zinit/zinit.zsh && zinit self-update -q && zinit update --all -q && zinit csclear"
     fi
 }
-run_step "Обновление плагинов Zsh и Zinit" update_zinit
+run_step "Обновление плагинов Zsh и очистка кэша" clean_and_update_zinit
 
 # === 10. Завершение работы ===
 echo ""
@@ -236,6 +239,9 @@ echo " Для повторного запуска используйте ком�
 echo "================================================="
 echo ""
 echo "Переключаюсь в zsh..."
+
+# Удаляем старый zcompdump перед входом, чтобы Zsh сгенерировал его заново без ошибок
+rm -f ~/.zcompdump*
 
 if command -v zsh >/dev/null 2>&1; then
     exec zsh -l
