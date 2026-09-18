@@ -12,7 +12,7 @@ spin_loop() {
     while true; do
         local temp=${spinstr#?}
         printf " [%c] " "$spinstr"
-        spinstr=$temp${spinstr%"$temp"}
+        spinstr=$temp${spinstr\%"$temp"}
         sleep $delay
         printf "\b\b\b\b\b"
     done
@@ -65,18 +65,23 @@ run_step "Подготовка системного окружения (PATH/Р�
 
 # === 0.2. Предварительная очистка кэша Zsh перед началом установки ===
 pre_clean_zsh() {
-    rm -rf ~/.local/share/zinit/completions/*
-    rm -f ~/.zcompdump*
+    # Удаляем саму папку, чтобы избежать ошибки `No such file or directory` из-за маски `*`
+    rm -rf ~/.local/share/zinit/completions ~/.zcompdump*
 }
 run_step "Очистка старого кэша Zsh" pre_clean_zsh
 
 # === 1. Обновление системы и базовый набор пакетов ===
-run_step "Обновление списка пакетов" apt update
-run_step "Обновление системы (full-upgrade)" apt full-upgrade -y
-run_step "Установка базовых утилит и шрифтов" apt install -y micro sudo unzip autojump fontconfig ufw nano git wget curl zstd zsh net-tools cron socat btop fzf zoxide fonts-font-awesome
+# Используем неинтерактивный режим для предотвращения зависания на экранах debconf
+run_step "Обновление списка пакетов" apt-get update
+run_step "Обновление системы (full-upgrade)" env DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -yq -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
+run_step "Установка базовых утилит и шрифтов" env DEBIAN_FRONTEND=noninteractive apt-get install -yq micro sudo unzip autojump fontconfig ufw nano git wget curl zstd zsh net-tools cron socat btop fzf zoxide fonts-font-awesome
 
 # === 2. Настройка часового пояса UTC ===
-run_step "Настройка часового пояса UTC" timedatectl set-timezone UTC
+setup_timezone() {
+    # Fallback для контейнеров LXC/Docker, где нет systemd
+    timedatectl set-timezone UTC || ln -fs /usr/share/zoneinfo/UTC /etc/localtime
+}
+run_step "Настройка часового пояса UTC" setup_timezone
 
 # === 3. Настройка micro ===
 setup_micro() {
@@ -120,7 +125,7 @@ run_step "Проверка и установка шрифтов JetBrainsMono" i
 # === 5. Включение zsh по умолчанию ===
 set_zsh_default() {
     if command -v zsh >/dev/null 2>&1; then
-        chsh -s "$(command -v zsh)"
+        chsh -s "$(command -v zsh)" || true
     fi
 }
 run_step "Установка Zsh по умолчанию" set_zsh_default
@@ -166,7 +171,7 @@ autoload -Uz compinit && compinit -u -C
 zstyle ':completion:*' menu select
 zstyle ':completion:*:descriptions' format '[%d]'
 
-# Алиасы (sudo удален для предотвращения ошибок на чистой системе, так как скрипт выполняется от root)
+# Алиасы 
 alias ls='ls --color=auto'
 alias rr='/usr/local/bin/remnawave_reverse'
 alias rwe="docker exec -it remnawave cli"
@@ -228,15 +233,21 @@ run_step "Генерация файла конфигурации .zshrc" generat
 # === 7. Настройка задач Cron ===
 setup_cron() {
     systemctl enable cron --now || true
-    CRON_JOB="0 19 * * 4 /usr/bin/apt update && /usr/bin/apt full-upgrade -y >> /var/log/apt_autoupdate.log 2>&1"
-    (crontab -l 2>/dev/null | grep -Fv "$CRON_JOB"; echo "$CRON_JOB") | crontab -
+    CRON_JOB="0 19 * * 4 /usr/bin/apt update && env DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get full-upgrade -yq >> /var/log/apt_autoupdate.log 2>&1"
+    
+    # Безопасное обновление crontab без риска падения на пустом сервере
+    (crontab -l 2>/dev/null || true) | grep -Fv "$CRON_JOB" > /tmp/cron_tmp || true
+    echo "$CRON_JOB" >> /tmp/cron_tmp
+    crontab /tmp/cron_tmp
+    rm -f /tmp/cron_tmp
 }
 run_step "Настройка автоматических обновлений в Cron" setup_cron
 
 # === 8. Gruvbox Rainbow preset для Starship ===
 setup_starship_preset() {
     mkdir -p ~/.config
-    starship preset gruvbox-rainbow --force -o ~/.config/starship.toml
+    # Вызов по абсолютному пути на случай, если hash таблица bash ещё не обновилась
+    /usr/local/bin/starship preset gruvbox-rainbow --force -o ~/.config/starship.toml
 }
 run_step "Применение темы Gruvbox Rainbow для Starship" setup_starship_preset
 
