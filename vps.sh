@@ -65,8 +65,11 @@ run_step "Подготовка системного окружения (PATH/Р�
 
 # === 0.2. Предварительная очистка кэша Zsh перед началом установки ===
 pre_clean_zsh() {
-    # Удаляем саму папку, чтобы избежать ошибки `No such file or directory` из-за маски `*`
-    rm -rf ~/.local/share/zinit/completions ~/.zcompdump*
+    # Удаляем саму папку completions, кэш zcompdump и проблемный плагин zsh-autocomplete,
+    # чтобы избежать конфликта кэша при обновлении через scu
+    rm -rf ~/.local/share/zinit/completions \
+           ~/.local/share/zinit/plugins/marlonrichert---zsh-autocomplete \
+           ~/.zcompdump*
 }
 run_step "Очистка старого кэша Zsh" pre_clean_zsh
 
