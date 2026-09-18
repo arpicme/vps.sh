@@ -104,6 +104,7 @@ alias ls='ls --color=auto'
 alias rr='/usr/local/bin/remnawave_reverse'
 alias rwe="docker exec -it remnawave cli"
 alias up="sudo apt update && sudo apt full-upgrade -y"
+alias upw="up && rwu"
 alias mi="micro"
 alias mzh="cd && mi .zshrc"
 alias szh="cd && source .zshrc"
