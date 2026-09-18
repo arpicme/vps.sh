@@ -6,15 +6,15 @@ set -e
 
 # === Функция спиннера в фоновом режиме ===
 spin_loop() {
-    local spinstr='|/-\'
+    local chars=( '|' '/' '-' '\' )
     local delay=0.1
     tput civis 2>/dev/null || true
     while true; do
-        local temp=${spinstr#?}
-        printf " [%c] " "$spinstr"
-        spinstr=$temp${spinstr\%"$temp"}
-        sleep $delay
-        printf "\b\b\b\b\b"
+        for c in "${chars[@]}"; do
+            printf " [%s] " "$c"
+            sleep $delay
+            printf "\b\b\b\b\b"
+        done
     done
 }
 
