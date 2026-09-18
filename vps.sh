@@ -5,7 +5,10 @@ set -e
 apt update && apt full-upgrade -y
 apt install -y micro sudo unzip autojump fontconfig ufw nano git wget curl zstd zsh net-tools cron socat btop fzf zoxide fonts-font-awesome
 
-# === 2. Настройка micro ===
+# === 2. Настройка часового пояса UTC ===
+timedatectl set-timezone UTC
+
+# === 3. Настройка micro ===
 mkdir -p ~/.config/micro
 
 cat > ~/.config/micro/bindings.json << 'EOF'
@@ -23,7 +26,7 @@ cat > ~/.config/micro/settings.json << 'EOF'
 }
 EOF
 
-# === 3. Установка Starship и шрифтов JetBrainsMono Nerd Font ===
+# === 4. Установка Starship и шрифтов JetBrainsMono Nerd Font ===
 curl -sS https://starship.rs/install.sh | sh -s -- -y
 
 cd /tmp
@@ -35,17 +38,21 @@ fc-cache -fv
 rm -rf JetBrainsMono JetBrainsMono.zip
 cd ~
 
-# === 4. Включение zsh по умолчанию ===
+# === 5. Включение zsh по умолчанию ===
 if command -v zsh >/dev/null 2>&1; then
     chsh -s "$(command -v zsh)"
 fi
 
-# === 5. Генерация ~/.zshrc ===
-kdir -p ~/.local/share/zsh ~/.local/share/zinit
+# === 6. Генерация ~/.zshrc ===
+mkdir -p ~/.local/share/zsh ~/.local/share/zinit
 touch ~/.local/share/zsh/chpwd-recent-dirs
 
 cat > ~/.zshrc << 'EOF'
 export PATH="$HOME/.local/bin:$PATH"
+
+# Инициализация работы с историей директорий
+autoload -Uz chpwd_recent_dirs cdr add-zsh-hook
+add-zsh-hook chpwd chpwd_recent_dirs
 
 # Путь для Zinit
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit"
@@ -159,13 +166,18 @@ bindkey '^N' history-search-forward
 eval "$(starship init zsh)"
 EOF
 
-# === 6. Gruvbox Rainbow preset для Starship ===
+# === 7. Настройка задач Cron ===
+systemctl enable cron --now
+CRON_JOB="0 19 * * 4 /usr/bin/apt update && /usr/bin/apt full-upgrade -y >> /var/log/apt_autoupdate.log 2>&1"
+(crontab -l 2>/dev/null | grep -Fv "$CRON_JOB"; echo "$CRON_JOB") | crontab -
+
+# === 8. Gruvbox Rainbow preset для Starship ===
 mkdir -p ~/.config
 starship preset gruvbox-rainbow -o ~/.config/starship.toml
 
 echo "Готово. Переключаюсь в zsh..."
 
-# === 7. Применяем zsh прямо сейчас ===
+# === 9. Применяем zsh прямо сейчас ===
 if command -v zsh >/dev/null 2>&1; then
     exec zsh -l
 else
