@@ -27,7 +27,7 @@ cat > ~/.config/micro/settings.json << 'EOF'
 EOF
 
 # === 4. Установка Starship и шрифтов JetBrainsMono Nerd Font (с проверкой) ===
-curl -sS https://starship.rs/install.sh | sh -s -- -y
+curl -sS https://starship.rs/install.sh | sh -s -- -y >/dev/null 2>&1
 
 if [ ! -d "$HOME/.local/share/fonts/JetBrainsMono" ]; then
     echo "Шрифты JetBrainsMono не найдены. Устанавливаем..."
@@ -126,7 +126,7 @@ alias szh="cd && source .zshrc"
 alias cl="clear"
 alias mds="motd-set"
 alias scu="bash <(wget -qO- https://raw.githubusercontent.com/arpicme/vps.sh/refs/heads/main/vps.sh)"
-alias zup="PAGER=cat GIT_PAGER=cat zinit self-update -q && PAGER=cat GIT_PAGER=cat zinit update --all -q"
+alias zup="zinit self-update -q && zinit update --all -q"
 
 # Функции
 # Перезапуск контейнера
@@ -183,9 +183,9 @@ mkdir -p ~/.config
 starship preset gruvbox-rainbow --force -o ~/.config/starship.toml
 
 # === 9. Обновление плагинов Zinit при запуске скрипта ===
-if command -v zsh >/dev/null 2>&1 && [ -f "$HOME/.local/share/zinit/zinit.zsh" ]; then
+if [ -f "$HOME/.local/share/zinit/zinit.zsh" ]; then
     echo "Обновляем плагины Zsh и Zinit..."
-    PAGER=cat GIT_PAGER=cat zsh -ic "source ~/.zshrc && zinit self-update -q && zinit update --all -q" || true
+    zsh -c "source $HOME/.local/share/zinit/zinit.zsh && zinit self-update -q && zinit update --all -q" >/dev/null 2>&1 || true
 fi
 
 # === 10. Завершение работы ===
