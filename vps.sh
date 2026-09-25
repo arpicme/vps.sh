@@ -135,17 +135,18 @@ generate_zshrc() {
     touch ~/.local/share/zsh/chpwd-recent-dirs
 
     cat > ~/.zshrc << 'EOF'
-export PATH="\(HOME/.local/bin:\)PATH"
+# Полный системный PATH для гарантированного доступа к утилитам
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:\(HOME/.local/bin:\)PATH"
 
 # Инициализация работы с историей директорий
 autoload -Uz chpwd_recent_dirs cdr add-zsh-hook
 add-zsh-hook chpwd chpwd_recent_dirs
 
-# Путь для Zinit
-ZINIT_HOME="\({XDG_DATA_HOME:-\){HOME}/.local/share}/zinit"
+# Прямой путь для Zinit
+ZINIT_HOME="${HOME}/.local/share/zinit"
 if [ ! -f "${ZINIT_HOME}/zinit.zsh" ]; then
-    mkdir -p "\((dirname "\)ZINIT_HOME")"
-    git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+    mkdir -p "${ZINIT_HOME}"
+    git clone https://github.com/zdharma-continuum/zinit.git "${ZINIT_HOME}"
 fi
 source "${ZINIT_HOME}/zinit.zsh"
 
@@ -252,7 +253,7 @@ run_step "Применение темы Gruvbox Rainbow для Starship" setup_s
 update_zinit_plugins() {
     ZINIT_HOME="${HOME}/.local/share/zinit"
     if [ ! -f "$ZINIT_HOME/zinit.zsh" ]; then
-        mkdir -p "\((dirname "\)ZINIT_HOME")"
+        mkdir -p "$ZINIT_HOME"
         git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
     fi
     zsh -c "source $ZINIT_HOME/zinit.zsh && zinit self-update -q && zinit update --all -q" || true
