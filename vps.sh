@@ -65,8 +65,6 @@ run_step "Подготовка системного окружения (PATH/Р�
 
 # === 0.2. Предварительная очистка кэша Zsh перед началом установки ===
 pre_clean_zsh() {
-    # Удаляем саму папку completions, кэш zcompdump и проблемный плагин zsh-autocomplete,
-    # чтобы избежать конфликта кэша при обновлении через scu
     rm -rf ~/.local/share/zinit/completions \
            ~/.local/share/zinit/plugins/marlonrichert---zsh-autocomplete \
            ~/.zcompdump*
@@ -74,14 +72,12 @@ pre_clean_zsh() {
 run_step "Очистка старого кэша Zsh" pre_clean_zsh
 
 # === 1. Обновление системы и базовый набор пакетов ===
-# Используем неинтерактивный режим для предотвращения зависания на экранах debconf
 run_step "Обновление списка пакетов" apt-get update
 run_step "Обновление системы (full-upgrade)" env DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -yq -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
 run_step "Установка базовых утилит и шрифтов" env DEBIAN_FRONTEND=noninteractive apt-get install -yq micro sudo unzip autojump fontconfig ufw nano git wget curl zstd zsh net-tools cron socat btop fzf zoxide fonts-font-awesome
 
 # === 2. Настройка часового пояса UTC ===
 setup_timezone() {
-    # Fallback для контейнеров LXC/Docker, где нет systemd
     timedatectl set-timezone UTC || ln -fs /usr/share/zoneinfo/UTC /etc/localtime
 }
 run_step "Настройка часового пояса UTC" setup_timezone
@@ -135,20 +131,20 @@ run_step "Установка Zsh по умолчанию" set_zsh_default
 
 # === 6. Генерация ~/.zshrc ===
 generate_zshrc() {
-    mkdir -p ~/.local/share/zsh ~/.local/share/zinit
+    mkdir -p ~/.local/share/zsh
     touch ~/.local/share/zsh/chpwd-recent-dirs
 
     cat > ~/.zshrc << 'EOF'
-export PATH="$HOME/.local/bin:$PATH"
+export PATH="\(HOME/.local/bin:\)PATH"
 
 # Инициализация работы с историей директорий
 autoload -Uz chpwd_recent_dirs cdr add-zsh-hook
 add-zsh-hook chpwd chpwd_recent_dirs
 
 # Путь для Zinit
-ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit"
-if [ ! -d "$ZINIT_HOME" ]; then
-    mkdir -p "$(dirname "$ZINIT_HOME")"
+ZINIT_HOME="\({XDG_DATA_HOME:-\){HOME}/.local/share}/zinit"
+if [ ! -f "${ZINIT_HOME}/zinit.zsh" ]; then
+    mkdir -p "\((dirname "\)ZINIT_HOME")"
     git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
 fi
 source "${ZINIT_HOME}/zinit.zsh"
@@ -174,7 +170,7 @@ autoload -Uz compinit && compinit -u -C
 zstyle ':completion:*' menu select
 zstyle ':completion:*:descriptions' format '[%d]'
 
-# Алиасы 
+# Алиасы
 alias ls='ls --color=auto'
 alias rr='/usr/local/bin/remnawave_reverse'
 alias rwe="docker exec -it remnawave cli"
@@ -238,7 +234,6 @@ setup_cron() {
     systemctl enable cron --now || true
     CRON_JOB="0 19 * * 4 /usr/bin/apt update && env DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get full-upgrade -yq >> /var/log/apt_autoupdate.log 2>&1"
     
-    # Безопасное обновление crontab без риска падения на пустом сервере
     (crontab -l 2>/dev/null || true) | grep -Fv "$CRON_JOB" > /tmp/cron_tmp || true
     echo "$CRON_JOB" >> /tmp/cron_tmp
     crontab /tmp/cron_tmp
@@ -249,16 +244,18 @@ run_step "Настройка автоматических обновлений �
 # === 8. Gruvbox Rainbow preset для Starship ===
 setup_starship_preset() {
     mkdir -p ~/.config
-    # Вызов по абсолютному пути на случай, если hash таблица bash ещё не обновилась
     /usr/local/bin/starship preset gruvbox-rainbow --force -o ~/.config/starship.toml
 }
 run_step "Применение темы Gruvbox Rainbow для Starship" setup_starship_preset
 
 # === 9. Обновление плагинов Zinit ===
 update_zinit_plugins() {
-    if [ -f "$HOME/.local/share/zinit/zinit.zsh" ]; then
-        zsh -c "source $HOME/.local/share/zinit/zinit.zsh && zinit self-update -q && zinit update --all -q" || true
+    ZINIT_HOME="${HOME}/.local/share/zinit"
+    if [ ! -f "$ZINIT_HOME/zinit.zsh" ]; then
+        mkdir -p "\((dirname "\)ZINIT_HOME")"
+        git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
     fi
+    zsh -c "source $ZINIT_HOME/zinit.zsh && zinit self-update -q && zinit update --all -q" || true
     return 0
 }
 run_step "Обновление плагинов Zsh" update_zinit_plugins
