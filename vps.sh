@@ -58,22 +58,24 @@ check_environment() {
 # Spinner
 # ----------------------------------------------------------------------------
 spin_loop() {
+    local title="$1"
     local chars=( '|' '/' '-' '\\' )
     local delay=0.1
+    local i=0
 
     tput civis 2>/dev/null || true
 
     while true; do
-        for c in "${chars[@]}"; do
-            printf " [%s] " "$c"
-            sleep "$delay"
-            printf "\b\b\b\b\b"
-        done
+        # Всегда перерисовываем одну и ту же строку.
+        # \r возвращает курсор в начало строки, а ESC[K очищает её.
+        printf '\r\033[K %s... [%s]' "$title" "${chars[i]}"
+        i=$(( (i + 1) % ${#chars[@]} ))
+        sleep "$delay"
     done
 }
 
 start_spinner() {
-    spin_loop &
+    spin_loop "$1" &
     SPINNER_PID=$!
 }
 
@@ -84,6 +86,8 @@ stop_spinner() {
         SPINNER_PID=""
     fi
 
+    # Убираем последнюю рамку spinner'а и восстанавливаем курсор.
+    printf '\r\033[K'
     tput cnorm 2>/dev/null || true
 }
 
@@ -102,8 +106,7 @@ run_step() {
     local status
     local pid
 
-    printf " %-55s" "$title..."
-    start_spinner
+    start_spinner "$title"
 
     {
         printf '\n===== %s =====\n' "$title"
