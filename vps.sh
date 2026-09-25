@@ -475,6 +475,8 @@ alias mzh='micro ~/.zshrc'
 alias szh='source ~/.zshrc'
 alias cl='clear'
 alias mds='motd-set'
+alias mid='mi docker-compose.yml'
+alias min='mi nginx.conf'
 alias scu='bash <(wget -qO- https://raw.githubusercontent.com/arpicme/vps.sh/refs/heads/main/vps.sh)'
 alias zup='zinit self-update -q && zinit update --all -q'
 
