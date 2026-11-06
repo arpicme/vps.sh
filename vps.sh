@@ -467,6 +467,7 @@ fi
 # ---------------------------------------------------------------------------
 alias ls='ls --color=auto'
 alias rr='/usr/local/bin/remnawave_reverse'
+alias dr='docker compose down && docker compose up -d && docker compose logs -f -t'
 alias rwe='docker exec -it remnawave cli'
 alias up='apt-get update && apt-get full-upgrade -y'
 alias upw='up && rwu'
