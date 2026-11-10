@@ -460,11 +460,11 @@ bindkey '^N' history-search-forward
 # ---------------------------------------------------------------------------
 if command -v zoxide >/dev/null 2>&1; then
     # Устраняем конфликт алиаса Zinit и функции zoxide
-    if (( ${+aliases[zi]} )); then
+    if (( \${+aliases[zi]} )); then
         unalias zi
     fi
 
-    eval "$(zoxide init zsh)"
+    eval "\$(zoxide init zsh)"
 fi
 
 # ---------------------------------------------------------------------------
