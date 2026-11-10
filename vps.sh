@@ -26,7 +26,6 @@ set -Eeuo pipefail
 
 LOG_FILE="/tmp/vps_setup.log"
 BACKUP_SUFFIX="$(date +%Y%m%d-%H%M%S)"
-SPINNER_PID=""
 
 export DEBIAN_FRONTEND=noninteractive
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${HOME}/.local/bin:${PATH:-}"
@@ -55,45 +54,6 @@ fi
 }
 
 # ----------------------------------------------------------------------------
-# Spinner
-# ----------------------------------------------------------------------------
-spin_loop() {
-local title="$1"
-local chars=( '|' '/' '-' '\\' )
-local delay=0.1
-local i=0
-
-tput civis 2>/dev/null || true
-
-while true; do
-# Всегда перерисовываем одну и ту же строку.
-# \r возвращает курсор в начало строки, а ESC[K очищает её.
-printf '\r\033[K %s... [%s]' "$title" "${chars[i]}"
-i=$(( (i + 1) % ${#chars[@]} ))
-sleep "$delay"
-done
-}
-
-start_spinner() {
-spin_loop "$1" &
-SPINNER_PID=$!
-}
-
-stop_spinner() {
-if [[ -n "${SPINNER_PID}" ]]; then
-kill "${SPINNER_PID}" 2>/dev/null || true
-wait "${SPINNER_PID}" 2>/dev/null || true
-SPINNER_PID=""
-fi
-
-# Убираем последнюю рамку spinner'а и восстанавливаем курсор.
-printf '\r\033[K'
-tput cnorm 2>/dev/null || true
-}
-
-trap 'stop_spinner' EXIT INT TERM
-
-# ----------------------------------------------------------------------------
 # Выполнение этапа
 #
 # Каждый этап запускается в отдельном subshell с собственным errexit.
@@ -101,42 +61,55 @@ trap 'stop_spinner' EXIT INT TERM
 # иначе наследовать подавленный errexit.
 # ----------------------------------------------------------------------------
 run_step() {
-local title="$1"
-shift
-local status
-local pid
+    local title="$1"
+    shift
 
-start_spinner "$title"
+    local status=0
+    local pid
+    local i=0
+    local chars=( '|' '/' '-' '\\' )
 
-{
-printf '\n===== %s =====\n' "$title"
-printf 'Started: %s\n' "$(date --iso-8601=seconds)"
-} >> "$LOG_FILE"
+    {
+        printf '\n===== %s =====\n' "$title"
+        printf 'Started: %s\n' "$(date --iso-8601=seconds)"
+    } >> "$LOG_FILE"
 
-set +e
-(
-set -Eeuo pipefail
-"$@"
-) >> "$LOG_FILE" 2>&1 &
-pid=$!
-wait "$pid"
-status=$?
-set -e
+    # Запускаем только сам этап в фоне. Spinner рисует основной Bash-процесс:
+    # отдельного фонового процесса для анимации нет, поэтому нет гонки с wait.
+    (
+        set -Eeuo pipefail
+        "$@"
+    ) >> "$LOG_FILE" 2>&1 &
+    pid=$!
 
-stop_spinner
+    while kill -0 "$pid" 2>/dev/null; do
+        printf '\r\033[K %s... [%s]' "$title" "${chars[i]}"
+        i=$(( (i + 1) % ${#chars[@]} ))
+        sleep 0.1
+    done
 
-if [[ "$status" -eq 0 ]]; then
-echo -e "\r\033[K✅ $title — готово"
-return 0
-fi
+    # Дочерний процесс может завершиться между kill -0 и wait; wait всё равно
+    # забирает его код возврата. Его диагностический stderr не засоряет экран.
+    if wait "$pid" 2>/dev/null; then
+        status=0
+    else
+        status=$?
+    fi
 
-echo -e "\r\033[K❌ $title — ошибка"
-echo
-echo "Последние строки лога:"
-tail -n 40 "$LOG_FILE" || true
-echo
-echo "Полный лог: $LOG_FILE"
-return "$status"
+    printf '\r\033[K'
+
+    if [[ "$status" -eq 0 ]]; then
+        echo "✅ $title — готово"
+        return 0
+    fi
+
+    echo "❌ $title — ошибка"
+    echo
+    echo "Последние строки лога:"
+    tail -n 40 "$LOG_FILE" || true
+    echo
+    echo "Полный лог: $LOG_FILE"
+    return "$status"
 }
 
 # ----------------------------------------------------------------------------
@@ -460,12 +433,10 @@ bindkey '^N' history-search-forward
 # ---------------------------------------------------------------------------
 if command -v zoxide >/dev/null 2>&1; then
    # Устраняем конфликт алиаса Zinit и функции zoxide
-    if (( ${+aliases[zi]} )); then
     if (( \${+aliases[zi]} )); then
        unalias zi
    fi
 
-    eval "$(zoxide init zsh)"
     eval "\$(zoxide init zsh)"
 fi
 
